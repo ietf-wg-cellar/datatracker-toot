@@ -1,0 +1,36 @@
+name: Toot Datatracker Events
+
+on:
+  push:
+    paths:
+    - '*.py'
+    - '.workflows/run.yml'
+    - 'update.sh'
+  schedule:
+    - cron: "18 */4 * * *"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.9
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    - name: Run toot_events.py
+      env:
+        TOOT_TOKEN_KEY: ${{ secrets.TOOT_TOKEN_KEY }}
+        TOOT_API_BASE: ${{ secrets.TOOT_API_BASE }}
+        TOOT_HASH: ${{ secrets.TOOT_HASH }}
+      run: |
+        python3 toot_events.py -g ${{ secrets.WORKING_GROUP }} -f LAST_SEEN -m > $GITHUB_STEP_SUMMARY
+    - name: Push update
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        ./update.sh
